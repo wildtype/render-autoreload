@@ -2,6 +2,8 @@
 use strict;
 use warnings;
 use Plack::Runner;
+use Plack::Builder;
+use Plack::App::File;
 
 use Path::Tiny;
 use Text::WikiCreole;
@@ -94,7 +96,7 @@ sub response_reload {
 }
 
 
-my $app = sub {
+my $dynamic = sub {
   my $env = shift;
   my $response_index = [
     '200',
@@ -111,11 +113,16 @@ my $app = sub {
   }
 };
 
+my $static = Plack::App::File->new(root => './')->to_app;
+my $builder = Plack::Builder->new;
+$builder->mount('/' => $dynamic);
+$builder->mount('/static' => $static);
+
 print STDERR "Watching and autoreloading $filename\n";
 
 my $runner = Plack::Runner->new;
 $runner->parse_options('--access-log','/dev/null');
-$runner->run($app);
+$runner->run($builder->to_app);
 
 __DATA__
 <!DOCTYPE html>
